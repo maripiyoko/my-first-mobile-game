@@ -9,7 +9,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/examples/resources/images"
+
+	"github.com/maripiyoko/my-first-mobile-game/resources/images"
 )
 
 const (
