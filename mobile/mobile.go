@@ -3,11 +3,12 @@ package mobile
 import (
 	"github.com/hajimehoshi/ebiten/v2/mobile"
 
-	"github.com/maripiyoko/my-first-mobile-game/hello"
+	//"github.com/maripiyoko/my-first-mobile-game/hello"
+	"github.com/maripiyoko/my-first-mobile-game/tiles"
 )
 
 func init() {
-	game, err := hello.NewGame()
+	game, err := tiles.NewGame()
 	if err != nil {
 		panic(err)
 	}
