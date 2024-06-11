@@ -6,11 +6,12 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	//"github.com/maripiyoko/my-first-mobile-game/hello"
-	"github.com/maripiyoko/my-first-mobile-game/tiles"
+	//"github.com/maripiyoko/my-first-mobile-game/tiles"
+	"github.com/maripiyoko/my-first-mobile-game/maze"
 )
 
 func main() {
-	game, err := tiles.NewGame()
+	game, err := maze.NewGame()
 	if err != nil {
 		panic(err)
 	}

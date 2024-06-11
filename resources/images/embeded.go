@@ -10,4 +10,7 @@ var (
 
 	//go:embed walls.png
 	Walls_png []byte
+
+	//go:embed floors.png
+	Floors_png []byte
 )
