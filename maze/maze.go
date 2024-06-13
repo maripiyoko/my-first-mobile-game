@@ -21,6 +21,8 @@ const (
 const (
 	screenWidth  = tileSize * tileCount
 	screenHeight = tileSize * tileCount
+
+	frameCount = 5
 )
 
 const (
@@ -46,13 +48,42 @@ type Player struct {
 	score int
 }
 
+type PositionXY struct {
+	x, y int
+}
+
 type Game struct {
 	layers      [][]int
 	maxDotCount int
 	player      Player
+
+	touchIds         []ebiten.TouchID
+	touchIdsPosition map[ebiten.TouchID]PositionXY
+	clickedPosition  PositionXY
+	debugMsg         string
+	touchPositionX   int
+	touchPositionY   int
+	count            int
 }
 
 func (g *Game) Update() error {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		x, y := ebiten.CursorPosition()
+		//fmt.Printf("cursor x=%d,y=%d", x, y)
+		g.clickedPosition = PositionXY{x: x, y: y}
+	}
+
+	g.count++
+	g.touchIds = ebiten.AppendTouchIDs(g.touchIds[:0])
+	g.touchIdsPosition = map[ebiten.TouchID]PositionXY{}
+	for _, id := range g.touchIds {
+		x, y := ebiten.TouchPosition(id)
+		g.touchPositionX = x
+		g.touchPositionY = y
+		g.touchIdsPosition[id] = PositionXY{x: x, y: y}
+		CheckTappedDirection(g)
+	}
+
 	if inpututil.IsKeyJustPressed(ebiten.KeyJ) {
 		PlayerGoDown(g)
 	}
@@ -69,6 +100,7 @@ func (g *Game) Update() error {
 }
 
 func EatDot(g *Game, index int) {
+	//fmt.Printf("EatDot at %d\n", index)
 	g.player.score++
 	g.layers[0][index] = 0
 }
@@ -160,10 +192,42 @@ func PlayerGoRight(g *Game) {
 	}
 }
 
+// touchPositionX, touchPositionY と Player.x,y からどちらの方向が選択されたか判定する
+func CheckTappedDirection(g *Game) {
+	if g.count%frameCount > 0 {
+		return
+	}
+
+	if g.touchPositionX < 150 {
+		if g.touchPositionY > 150 {
+			// DOWN
+			PlayerGoDown(g)
+			g.debugMsg = "DOWN"
+		} else {
+			// LEFT
+			PlayerGoLeft(g)
+			g.debugMsg = "LEFT"
+		}
+	} else {
+		if g.touchPositionY > 150 {
+			// RIGHT
+			PlayerGoRight(g)
+			g.debugMsg = "RIGHT"
+		} else {
+			// UP
+			PlayerGoUp(g)
+			g.debugMsg = "UP"
+
+		}
+	}
+}
+
 func (g *Game) Draw(screen *ebiten.Image) {
 	DrawFloor(g, screen)
 	DrawPlayer(g, screen)
-	DrawSystemInfo(g, screen)
+	// DrawSystemInfo(g, screen)
+	DrawTouchPositionDebugPrint(g, screen)
+	//DrawClickedPositonDebugPrint(g, screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -178,7 +242,7 @@ func NewGame() (*Game, error) {
 				2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 				2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2,
 				2, 1, 2, 2, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 2, 2, 1, 2,
-				2, 1, 2, 0, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 0, 2, 1, 2,
+				2, 1, 2, 11, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 8, 2, 1, 2,
 				2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2,
 				2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2,
 				2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2,
@@ -190,7 +254,7 @@ func NewGame() (*Game, error) {
 				2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2,
 				2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2,
 				2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2,
-				2, 1, 2, 0, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 0, 2, 1, 2,
+				2, 1, 2, 9, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 10, 2, 1, 2,
 				2, 1, 2, 2, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 2, 2, 1, 2,
 				2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2,
 				2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -245,6 +309,23 @@ func DrawPlayer(g *Game, screen *ebiten.Image) {
 	rect := image.Rect(sx, 0, sx+tileSize, sy+tileSize)
 	subImage := floorsImage.SubImage(rect)
 	screen.DrawImage(subImage.(*ebiten.Image), op)
+}
+
+func DrawTouchPositionDebugPrint(g *Game, screen *ebiten.Image) {
+	var msg = "touch :"
+	/*for i, id := range g.touchIds {
+		pos := g.touchIdsPosition[id]
+		msg += fmt.Sprintf("[%d] ID=%d (%d,%d) ", i, id, pos.x, pos.y)
+	}*/
+	msg += fmt.Sprintf(" pos x=%d,y=%d ", g.touchPositionX, g.touchPositionY)
+	msg += fmt.Sprintf(" player x=%d,y=%d ", g.player.x, g.player.y)
+	msg += g.debugMsg
+	ebitenutil.DebugPrint(screen, msg)
+}
+
+func DrawClickedPositonDebugPrint(g *Game, screen *ebiten.Image) {
+	msg := fmt.Sprintf("Clicked : (%d,%d)", g.clickedPosition.x, g.clickedPosition.y)
+	ebitenutil.DebugPrint(screen, msg)
 }
 
 func DrawSystemInfo(g *Game, screen *ebiten.Image) {
